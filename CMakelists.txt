@@ -1,0 +1,22 @@
+cmake_minimum_required(VERSION "3.19.2")
+
+
+project("Ant_Colony_Optimization")
+
+set(CMAKE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(PROJECT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# raylib
+set(raylib_INCLUDE_DIR ${CMAKE_ROOT_DIR}/libs/raylib_x64-windows-static/include/)
+set(raylib_LIBRARIES ${CMAKE_ROOT_DIR}/libs/raylib_x64-windows-static/lib/raylib.lib)
+
+add_executable(${CMAKE_PROJECT_NAME} "src/main.cpp")
+
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
+	${raylib_INCLUDE_DIR} 
+	${PROJECT_INCLUDES}
+)
+
+target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE winmm.lib)
+target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC ${raylib_LIBRARIES})
+
