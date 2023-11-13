@@ -10,12 +10,14 @@ private:
 	float		AgentSizeX = 10;
 	float		AgentSizeY = 10;
 public:
-	Agent(float x, float y, float spd) 
-		:AgentTileX(x), AgentTileY(y), AgentMovSpd(spd) {
+	//Ctor
+	Agent() :AgentTileX(0), AgentTileY(0), AgentMovSpd(1) {}
 
-	}
+	Agent(float x, float y, float spd) 
+		:AgentTileX(x), AgentTileY(y), AgentMovSpd(spd) 
+	{}
 	// Move Agent in spd increments
-	void Move(int IncX, int IncY) {
+	void Update(int IncX, int IncY) {
 		AgentTileX += IncX * AgentMovSpd;
 		AgentTileY += IncY * AgentMovSpd;
 		return;
@@ -26,8 +28,8 @@ public:
 		return std::make_pair(AgentTileX, AgentTileY);
 	}
 
-	float PosX() { return AgentTileX; }
-	float PosY() { return AgentTileY; }
-	float SizeX() { return AgentSizeX; }
-	float SizeY() { return AgentSizeY; }
+	float PosX() const{ return AgentTileX; }
+	float PosY() const{ return AgentTileY; }
+	float SizeX() const{ return AgentSizeX; }
+	float SizeY() const{ return AgentSizeY; }
 };
