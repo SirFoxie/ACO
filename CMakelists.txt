@@ -10,11 +10,30 @@ set(PROJECT_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(raylib_INCLUDE_DIR ${CMAKE_ROOT_DIR}/libs/raylib_x64-windows-static/include/)
 set(raylib_LIBRARIES ${CMAKE_ROOT_DIR}/libs/raylib_x64-windows-static/lib/raylib.lib)
 
-add_executable(${CMAKE_PROJECT_NAME} "src/main.cpp")
+# rlimgui
+set(rlimgui_SRC_FILES ${CMAKE_ROOT_DIR}/libs/rlImGui/rlImGui.cpp)
+set(rlimgui_INCLUDE_DIR ${CMAKE_ROOT_DIR}/libs/rlImGui/)
+
+# imgui
+add_compile_definitions(NO_FONT_AWESOME)
+set(imgui_SRC_FILES 
+    ${CMAKE_ROOT_DIR}/libs/imgui/imgui.cpp
+    ${CMAKE_ROOT_DIR}/libs/imgui/imgui_demo.cpp
+    ${CMAKE_ROOT_DIR}/libs/imgui/imgui_draw.cpp
+    ${CMAKE_ROOT_DIR}/libs/imgui/imgui_tables.cpp
+    ${CMAKE_ROOT_DIR}/libs/imgui/imgui_widgets.cpp 
+)
+set(imgui_INCLUDE_DIR ${CMAKE_ROOT_DIR}/libs/imgui/)
+
+add_executable(${CMAKE_PROJECT_NAME} "src/main.cpp" 
+    ${rlimgui_SRC_FILES}
+    ${imgui_SRC_FILES})
 
 target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
-	${raylib_INCLUDE_DIR} 
 	${PROJECT_INCLUDES}
+	${raylib_INCLUDE_DIR} 
+    ${rlimgui_INCLUDE_DIR}
+    ${imgui_INCLUDE_DIR}
 )
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE winmm.lib)
