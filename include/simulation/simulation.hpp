@@ -1,3 +1,4 @@
+#pragma once
 
 #include <vector>
 
@@ -6,7 +7,7 @@
 
 class Simulation {
 private:
-	World world;
+	World& world;
 	std::vector<Agent> agents;
 
 public:
@@ -21,6 +22,10 @@ public:
 
 	void removeAgent() {
 
+	}
+
+	World& getMap() {
+		return world;
 	}
 
 	std::vector<Agent> getAgentList() {
