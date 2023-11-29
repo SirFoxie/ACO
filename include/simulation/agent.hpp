@@ -25,7 +25,7 @@ public:
 
 	Vector2 getPos() { return position; }
 
-	void update(const std::vector <Agent>& agents, const Weight& agentsWeights);
+	void update(const std::vector <Agent>& agents, const Weight& agentsWeights, const AgentState& newState);
 	void render();
 
 private:
@@ -52,23 +52,23 @@ Agent::Agent() {
 	this->velocity = { (float)GetRandomValue(MIN_VEL, MAX_VEL), 
 						(float)GetRandomValue(MIN_VEL, MAX_VEL) };
 	this->acceleration = { 1.0, 1.0 };
-	this->state = EXPLORING;
+	this->state = STANDBY;
 	return;
 }
 
-void Agent::update(const std::vector <Agent>& agents, const Weight& agentsWeights) {
+void Agent::update(const std::vector <Agent>& agents, const Weight& agentsWeights, const AgentState& newState) {
 
+	this->state = newState;
 	switch (state) {
 	case STANDBY:
 		return;
 		break;
 	case SEEKING:
-		Vector2 seekingForce = seek(GlobalData::getInstance().getMouseRel());
+		Vector2 seekingForce = seek(World::getInstance().getMarkerPos());
 		this->acceleration = Vector2Add(acceleration, Vector2Scale(seekingForce, 10));
+		break;
 	case EXPLORING:
-		//World::Area borders = GridPosToPixelPos(World::getInstance().getMap());
-		//Vector2 exploringForce = seek( {(float)borders.width ,this->position.y});
-		//this->acceleration = Vector2Add(acceleration, Vector2Scale(exploringForce, 10));
+
 		break;
 	}
 
@@ -171,4 +171,5 @@ void Agent::render() {
 void Agent::debug() {
 	DrawText(TextFormat("[%.2f, %.2f]", position.x, position.y), position.x, position.y - 5, 10, LIME);
 	DrawText(TextFormat("[%.2f, %.2f]", velocity.x, velocity.y), position.x, position.y + 5, 10, LIME);
+	DrawText(TextFormat("State: %d", this->state), position.x, position.y + 10, 10, LIME);
 }

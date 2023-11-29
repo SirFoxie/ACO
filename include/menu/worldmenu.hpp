@@ -58,7 +58,7 @@ void WorldMenu::renderImGui() {
 		ImGui::SliderInt("Map Width", &(world.getMap().width), 1, 20);
 		ImGui::SliderInt("Map Height", &(world.getMap().height),1, 20);
 		
-		ImGui::SliderInt("Border", &(world.getStartSearchBorder()), 1, (world.getMap().width));
+		ImGui::SliderFloat("Border", &(world.getStartSearchBorder()), 0, 1);
 
 
 		ImGui::EndChild();
@@ -66,7 +66,9 @@ void WorldMenu::renderImGui() {
 		ImGui::Spacing();
 
 		ImGui::BeginChild("Walls", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y), true);
-		ImGui::Checkbox("Place Markers", &(world.checkPlacingWalls()));
+		//ImGui::Text("%s", randomPoint.first, randomPoint.second);
+		ImGui::Checkbox("Place Markers", &(world.checkPlacingMarkers()));
+		ImGui::Checkbox("Place Wall", &(world.checkPlacingWalls()));
 		//ImGui::Checkbox("Follow Mouse", &isFollowMouse);
 		ImGui::EndChild();
 

@@ -27,12 +27,14 @@ public:
 	void setAreaType(int xPos, int yPos, int width, int height, TileType type);
 
 	bool& checkPlacingWalls() { return isPlacingWalls; }
+	bool& checkPlacingMarkers() { return isPlacingMarkers; }
 	Area& getMap() { return Map; }
 	Area& getStartArea() { return StartArea; }
 	Area& getSearchArea() { return SearchArea; }
-	int& getStartSearchBorder() { return StartSearchBorder; }
-	TileType checkTileType(int xPos, int yPos);
+	float& getStartSearchBorder() { return StartSearchBorder; }
+	TileType checkTileType (int xPos, int yPos) const;
 
+	Vector2 getMarkerPos() { return markerPos; }
 	void handleInputs();
 	void update();
 	void render();
@@ -45,13 +47,16 @@ private:
 	Area SearchArea;
 	Area TileMap;
 
-	int StartSearchBorder = 6;
+	float StartSearchBorder = 0.3;
 
 	std::vector<std::vector<TileType>> Tile2DGrid;	// 2d Grid array
 	//unsigned char *tileFog;
-	bool isValidPos(int xPos, int yPos);
+	bool isValidPos(int xPos, int yPos) const;
 
-	bool isPlacingWalls = 0;
+	bool isPlacingWalls = false;
+	bool isPlacingMarkers = false;
+
+	Vector2 markerPos;
 
 	void drawArea();
 	void drawMaze();
@@ -60,17 +65,17 @@ private:
 
 void World::setWorldDims(int _startX, int _startY, int _width, int _height) {
 	Map = { _startX, _startY, _width , _height };
-	StartArea = { Map.x, Map.y, StartSearchBorder , Map.height };
-	SearchArea = { (Map.x + StartSearchBorder), Map.y, (Map.width - StartSearchBorder), Map.height, };
 	TileMap = { Map.x, Map.y, Map.width, Map.height };
 	this->Tile2DGrid.resize(TileMap.width, std::vector<TileType>(TileMap.height, TileType::Fog));
 
+	StartArea = { Map.x, Map.y, int(Map.width * StartSearchBorder) , Map.height };
+	SearchArea = { (Map.x + StartArea.width), Map.y, (Map.width - StartArea.width), Map.height, };
+	setAreaType(StartArea.x, StartArea.y, StartArea.width, StartArea.height, Explored);
 	return;
 }
 
 
-
-bool World::isValidPos(int xPos, int yPos) {
+bool World::isValidPos(int xPos, int yPos) const {
 	if (xPos < Map.x || xPos >= Map.width) return false;
 	if (yPos < Map.y || yPos >= Map.height) return false;
 	return true;
@@ -78,7 +83,7 @@ bool World::isValidPos(int xPos, int yPos) {
 
 void World::setTileType(int xPos, int yPos, TileType type) {
 	if (!isValidPos(xPos, yPos)) return;
-	 this->Tile2DGrid[xPos][yPos] = type;
+	this->Tile2DGrid[xPos][yPos] = type;
 	return;
 }
 
@@ -90,7 +95,7 @@ void World::setAreaType(int xPos, int yPos, int width, int height, TileType type
 	}
 }
 
-World::TileType World::checkTileType(int xPos, int yPos) {
+World::TileType World::checkTileType(int xPos, int yPos) const {
 	if (!isValidPos(xPos, yPos)) return TileType::OOB;
 	return Tile2DGrid[xPos][yPos];
 }
@@ -135,8 +140,16 @@ void World::handleInputs() {
 			setTileType(SelectedGrid.x, SelectedGrid.y, Wall);
 		}
 	}
+
+	if (isPlacingMarkers) {
+		if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+			this->markerPos = (GlobalData::getInstance().getMouseRel());
+		}
+	}
 	
-	DrawText(TextFormat("TileType: %d", checkTileType(GetMouseX(), GetMouseY())), GetMouseX(), GetMouseY(), 10, LIME);
+	Vector2 mousePos = GlobalData::getInstance().getMouseRel();
+	mousePos = calcCellCoords(mousePos);
+	DrawText(TextFormat("TileType: %d", checkTileType(mousePos.x, mousePos.y)), GetMouseX(), GetMouseY(), 20, LIME);
 	return;
 }
 
@@ -145,9 +158,10 @@ void World::update() {
 		TileMap.width != Map.width || TileMap.height != Map.height) {
 		this->setWorldDims(Map.x, Map.y, Map.width, Map.height);
 	}
-	if (StartSearchBorder != StartArea.width) {
-		StartArea = { Map.x, Map.y, StartSearchBorder , Map.height };
-		SearchArea = { (Map.x + StartSearchBorder), Map.y, (Map.width - StartSearchBorder), Map.height, };
+	if (int(Map.width * StartSearchBorder) != StartArea.width) {
+		StartArea = { Map.x, Map.y, int(Map.width * StartSearchBorder) , Map.height };
+		SearchArea = { (Map.x + StartArea.x), Map.y, (Map.width - StartArea.width), Map.height, };
+		setAreaType(StartArea.x, StartArea.y, StartArea.width, StartArea.height, Explored);
 	}
 	return;
 }

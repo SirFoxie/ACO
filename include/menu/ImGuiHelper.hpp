@@ -3,9 +3,11 @@
 #include "Menu.hpp"
 namespace ImGuiHelper {
 	void drawTabHorizontally(std::string childName, ImVec2 childSize, std::vector<std::string>tabNames, int& selectedSubTab);
+	void renderCombo(std::string title, std::vector<std::string>items, int& index, int comboWidth);
 	float getWidth();
 	float getHeight();
 	ImVec2 getTextLength(std::string text);
+	int elementSize = 120;
 }
 
 float ImGuiHelper::getWidth() {
@@ -58,4 +60,19 @@ void ImGuiHelper::drawTabHorizontally(std::string childName, ImVec2 childSize, s
 	ImGui::PopStyleVar();
 
 	ImGui::EndChild();
+}
+
+void ImGuiHelper::renderCombo(std::string title, std::vector<std::string>items, int& index, int comboWidth) {
+	ImGui::PushItemWidth(comboWidth);
+	if (ImGui::BeginCombo(title.c_str(), items.at(index).c_str(), 0)) {
+
+		for (int n = 0; n < items.size(); n++) {
+			const bool is_selected = (index == n);
+			if (ImGui::Selectable(items.at(n).c_str(), is_selected))index = n;
+
+			if (is_selected)ImGui::SetItemDefaultFocus();// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+		}
+		ImGui::EndCombo();
+	}
+	ImGui::PopItemWidth();
 }

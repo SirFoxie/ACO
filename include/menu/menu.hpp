@@ -20,6 +20,7 @@ public:
 	void addModules(MenuModule& newModule);
 
 	void render();
+
 private:
 	bool isPanelHidden = false;
 	int menuW = 600;

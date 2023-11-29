@@ -11,6 +11,7 @@ public:
 
 	//Accessors
 	int& size() { return swarmSize; }
+	int& state() { return reinterpret_cast<int&>(SwarmState); }
 
 	void update();
 	void render();
@@ -19,6 +20,8 @@ private:
 
 	int swarmSize;
 	std::vector<Agent> agents;
+
+	Agent::AgentState SwarmState = Agent::STANDBY;
 
 	void debug();
 };
@@ -35,7 +38,7 @@ void Swarm::update() {
 	}
 
 	for (Agent& agent : agents) {
-		agent.update(agents, {0.0, 0.0, 0.0});
+		agent.update(agents, {0.0, 0.0, 0.0}, SwarmState);
 	}
 	return;
 }
