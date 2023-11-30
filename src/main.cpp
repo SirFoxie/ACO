@@ -14,6 +14,7 @@
 #include "./menu/worldmenu.hpp"
 #include "./simulation/swarm.hpp"
 #include "./simulation/world.hpp"
+#include "./simulation/rrt.hpp"
 
 int main(int argc, char const* argv[])
 {
@@ -43,13 +44,22 @@ int main(int argc, char const* argv[])
         });
 
     // Init Swarm
-    Swarm DroneSwarm(SWARM_SIZE, SimWorld);
+    Swarm& DroneSwarm = Swarm::getInstance();
+    DroneSwarm.size() = SWARM_SIZE;
     SwarmMenu SwarmMenuObj(DroneSwarm);
     SimMenu.addModules(SwarmMenuObj);
 
     // Add class render functions pointer to GUI render list
     RLRenderWindows.push_back([&DroneSwarm]() {
         DroneSwarm.render();
+        });
+
+    // Init RRT
+    rrt testrrt(6*CELL_SIZE, 0, 20*CELL_SIZE, 20*CELL_SIZE);
+
+
+    RLRenderWindows.push_back([&testrrt]() {
+        testrrt.render();
         });
 
     // Main loop
@@ -63,6 +73,12 @@ int main(int argc, char const* argv[])
 
         // Update
         DroneSwarm.update();
+
+        // TEST
+        
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+            testrrt.update();
+        }
 
         // Draw
         GUI::renderRL();

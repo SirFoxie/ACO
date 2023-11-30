@@ -17,6 +17,11 @@ public:
 		int height;
 	};
 
+	struct Point {
+		int x;
+		int y;
+	};
+
 	static World& getInstance() {
 		static World instance;
 		return instance;
@@ -35,6 +40,7 @@ public:
 	TileType checkTileType (int xPos, int yPos) const;
 
 	Vector2 getMarkerPos() { return markerPos; }
+	Vector2 getRandomFogPoint();
 	void handleInputs();
 	void update();
 	void render();
@@ -50,7 +56,7 @@ private:
 	float StartSearchBorder = 0.3;
 
 	std::vector<std::vector<TileType>> Tile2DGrid;	// 2d Grid array
-	//unsigned char *tileFog;
+	std::vector<std::pair<int,int>> fogTiles;
 	bool isValidPos(int xPos, int yPos) const;
 
 	bool isPlacingWalls = false;
@@ -62,6 +68,9 @@ private:
 	void drawMaze();
 };
 
+World::Point GridPtToPixelPt(const World::Point& gridPt);
+World::Area PixelAreaToGridArea(const World::Area& area);
+World::Area GridAreaToPixelArea(const World::Area& area);
 
 void World::setWorldDims(int _startX, int _startY, int _width, int _height) {
 	Map = { _startX, _startY, _width , _height };
@@ -71,7 +80,26 @@ void World::setWorldDims(int _startX, int _startY, int _width, int _height) {
 	StartArea = { Map.x, Map.y, int(Map.width * StartSearchBorder) , Map.height };
 	SearchArea = { (Map.x + StartArea.width), Map.y, (Map.width - StartArea.width), Map.height, };
 	setAreaType(StartArea.x, StartArea.y, StartArea.width, StartArea.height, Explored);
+
+	// Create FogTiles
+	for (int row = 0; row < Tile2DGrid.size(); ++row) {
+		for (int col = 0; col < Tile2DGrid[row].size(); ++col) {
+			if (Tile2DGrid[row][col] == TileType::Fog) {
+				fogTiles.emplace_back(row, col);
+			}
+		}
+	}
+
 	return;
+}
+
+Vector2 World::getRandomFogPoint() {
+	if (fogTiles.empty()) {
+		return { 0,0 };
+	}
+	std::pair<int, int> randFogTile = fogTiles[rand() % fogTiles.size()];
+	Point randFogPixelPt = GridPtToPixelPt({ randFogTile.first, randFogTile.second });
+	return Vector2{ (float)randFogPixelPt.x, (float)randFogPixelPt.y };
 }
 
 
@@ -83,7 +111,16 @@ bool World::isValidPos(int xPos, int yPos) const {
 
 void World::setTileType(int xPos, int yPos, TileType type) {
 	if (!isValidPos(xPos, yPos)) return;
+	
+	if (this->Tile2DGrid[xPos][yPos] == Fog) {
+		auto it = std::find(fogTiles.begin(), fogTiles.end(), std::make_pair( xPos, yPos ));
+		if (it != fogTiles.end()) {
+			fogTiles.erase(it);
+		}
+	}
+
 	this->Tile2DGrid[xPos][yPos] = type;
+
 	return;
 }
 
@@ -176,9 +213,8 @@ void World::render() {
 	}
 	return;
 }
-
 // Outside Helper Functions
-World::Area PixelPosToGridPos(const World::Area& area) {
+World::Area PixelAreaToGridArea(const World::Area& area) {
 	World::Area newArea = {
 		(int)area.x / CELL_SIZE,
 		(int)area.y / CELL_SIZE,
@@ -188,12 +224,24 @@ World::Area PixelPosToGridPos(const World::Area& area) {
 	return newArea;
 }
 
-World::Area GridPosToPixelPos(const World::Area& area) {
+
+World::Area GridAreaToPixelArea(const World::Area& area) {
 	World::Area newArea = {
-		area.x * CELL_SIZE,
-		area.y * CELL_SIZE,
-		area.width * CELL_SIZE,
-		area.height * CELL_SIZE,
+		(int)area.x * CELL_SIZE,
+		(int)area.y * CELL_SIZE,
+		(int)area.width * CELL_SIZE,
+		(int)area.height * CELL_SIZE,
 	};
 	return newArea;
 }
+
+World::Point GridPtToPixelPt(const World::Point& gridPt) {
+	World::Point pixelPt = {
+		gridPt.x * CELL_SIZE,
+		gridPt.y * CELL_SIZE,
+	};
+
+	return pixelPt;
+}
+
+

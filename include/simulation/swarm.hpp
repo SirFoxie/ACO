@@ -5,18 +5,23 @@
 
 class Swarm {
 public:
-	Swarm() = default;
-	Swarm(int _size, World& _map);
-	~Swarm() = default;
+	static Swarm& getInstance() {
+		static Swarm instance;
+		return instance;
+	}
 
 	//Accessors
 	int& size() { return swarmSize; }
 	int& state() { return reinterpret_cast<int&>(SwarmState); }
+	std::vector<Agent>& getAgents() { return agents; }
+
+	void moveNearest(const Vector2& orgin, const Vector2& target);
 
 	void update();
 	void render();
 private:
-	World& map;
+	Swarm() {};
+	~Swarm() = default;
 
 	int swarmSize;
 	std::vector<Agent> agents;
@@ -26,9 +31,18 @@ private:
 	void debug();
 };
 
-Swarm::Swarm(int _size, World& _map) :
-	swarmSize(_size), agents(_size), map(_map)
-{
+void Swarm::moveNearest(const Vector2& orgin, const Vector2& target) {
+	float min_distance = FLT_MAX;
+	int id = 0, target_id = 0;
+	for (Agent& agent : agents) {
+		float curr_distance = Vector2Distance(orgin, agent.getPos());
+		if (curr_distance < min_distance) {
+			min_distance = curr_distance;
+			target_id = id;
+		}
+		id++;
+	}
+	agents[target_id].addTargetPos(target);
 	return;
 }
 
@@ -38,7 +52,7 @@ void Swarm::update() {
 	}
 
 	for (Agent& agent : agents) {
-		agent.update(agents, {0.0, 0.0, 0.0}, SwarmState);
+		agent.update(agents, {0.0, 0.0, 0.0});
 	}
 	return;
 }

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "ImGuiHelper.hpp"
 #include "Menu.hpp"
+
 namespace ImGuiHelper {
 	void drawTabHorizontally(std::string childName, ImVec2 childSize, std::vector<std::string>tabNames, int& selectedSubTab);
 	void renderCombo(std::string title, std::vector<std::string>items, int& index, int comboWidth);

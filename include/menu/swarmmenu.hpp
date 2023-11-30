@@ -46,7 +46,7 @@ void SwarmMenu::renderImGui() {
 		ImGui::BeginChild("Population", ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetContentRegionAvail().y), true);
 
 		ImGui::PushItemWidth(this->elementsize());
-		ImGui::SliderInt("Population", &(swarm.size()), 0, 500);
+		ImGui::SliderInt("Population", &(swarm.size()), 0, 25);
 		ImGuiHelper::renderCombo("Swarm Behaviour", { "Standby", "Seeking", "Exploring" }, (swarm.state()), ImGuiHelper::elementSize);
 		// ImGui::SliderFloat("Alignment", &(swarm.weights().alignment), 0.0, 2.0);
 		// ImGui::SliderFloat("Cohesion", &(swarm.weights().cohesion), 0.0, 2.0);

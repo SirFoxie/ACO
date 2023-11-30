@@ -24,8 +24,10 @@ public:
 	~Agent() = default;
 
 	Vector2 getPos() { return position; }
+	void addTargetPos(const Vector2& target) { targetPos = target; state = SEEKING; }
+	Vector2 seek(const Vector2& target);
 
-	void update(const std::vector <Agent>& agents, const Weight& agentsWeights, const AgentState& newState);
+	void update(const std::vector <Agent>& agents, const Weight& agentsWeights);
 	void render();
 
 private:
@@ -34,10 +36,11 @@ private:
 	Vector2 velocity;
 	Vector2 acceleration;
 
+	Vector2 targetPos;
+
 	bool Raycast(Vector2 origin, Vector2 direction, float Distance);
 
 	Vector2 separation(const std::vector <Agent>& agents);
-	Vector2 seek(const Vector2& target);
 	Vector2 avoid();
 	void edge();
 
@@ -46,7 +49,7 @@ private:
 };
 
 Agent::Agent() {
-	World::Area StartArea = GridPosToPixelPos((World::getInstance().getStartArea()));
+	World::Area StartArea = GridAreaToPixelArea((World::getInstance().getStartArea()));
 	this->position = { (float)GetRandomValue(StartArea.x + (AGENT_SIZE * 2) , StartArea.width -(AGENT_SIZE * 2)),
 						(float)GetRandomValue(StartArea.y + (AGENT_SIZE * 2), StartArea.height -(AGENT_SIZE * 2)) };
 	this->velocity = { (float)GetRandomValue(MIN_VEL, MAX_VEL), 
@@ -56,15 +59,14 @@ Agent::Agent() {
 	return;
 }
 
-void Agent::update(const std::vector <Agent>& agents, const Weight& agentsWeights, const AgentState& newState) {
+void Agent::update(const std::vector <Agent>& agents, const Weight& agentsWeights) {
 
-	this->state = newState;
 	switch (state) {
 	case STANDBY:
 		return;
 		break;
 	case SEEKING:
-		Vector2 seekingForce = seek(World::getInstance().getMarkerPos());
+		Vector2 seekingForce = seek(targetPos);
 		this->acceleration = Vector2Add(acceleration, Vector2Scale(seekingForce, 10));
 		break;
 	case EXPLORING:
@@ -73,7 +75,7 @@ void Agent::update(const std::vector <Agent>& agents, const Weight& agentsWeight
 	}
 
 	Vector2 separationForce = separation(agents);
-	this->acceleration = Vector2Add(acceleration, Vector2Scale(separationForce, agentsWeights.seperation));
+	this->acceleration = Vector2Add(acceleration, Vector2Scale(separationForce, 10.0));
 	
 	Vector2 avoidanceForce = avoid(); // avoid static obstacles
 	this->acceleration = Vector2Add(acceleration, Vector2Scale(avoidanceForce, 10.0));
@@ -123,6 +125,8 @@ Vector2 Agent::separation(const std::vector <Agent>& agents) {
 }
 
 Vector2 Agent::seek(const Vector2& target) {
+	if (Vector2Equals(position, target)) state = STANDBY;
+
 	Vector2 steering = { 0.0, 0.0 };
 	Vector2 distance = Vector2Subtract(target, position);
 
@@ -130,13 +134,14 @@ Vector2 Agent::seek(const Vector2& target) {
 	steering = Vector2Scale(steering, MAX_VEL);
 	steering = Vector2Subtract(distance, velocity);
 	steering = Vector2ClampValue(steering, -0.1, 0.1);
+
 	return steering;
 }
 
 //bool Raycast();
 
 Vector2 Agent::avoid() {
-	World::Area borders = GridPosToPixelPos(World::getInstance().getMap());
+	World::Area borders = GridAreaToPixelArea(World::getInstance().getMap());
 
 	Vector2 steering = { 0.0, 0.0 };
 	float perception = 10 * AGENT_SIZE;
@@ -149,7 +154,7 @@ Vector2 Agent::avoid() {
 }
 
 void Agent::edge() {
-	World::Area borders = GridPosToPixelPos(World::getInstance().getMap());
+	World::Area borders = GridAreaToPixelArea(World::getInstance().getMap());
 
 	float perception = 1 * AGENT_SIZE;
 
@@ -164,12 +169,13 @@ void Agent::edge() {
 
 void Agent::render() {
 	DrawCircle(position.x, position.y, AGENT_SIZE, ORANGE);
-	//debug();
+	debug();
 	return;
 }
 
 void Agent::debug() {
-	DrawText(TextFormat("[%.2f, %.2f]", position.x, position.y), position.x, position.y - 5, 10, LIME);
-	DrawText(TextFormat("[%.2f, %.2f]", velocity.x, velocity.y), position.x, position.y + 5, 10, LIME);
-	DrawText(TextFormat("State: %d", this->state), position.x, position.y + 10, 10, LIME);
+	DrawText(TextFormat("[%.2f, %.2f]", position.x, position.y), position.x, position.y, 10, LIME);
+	DrawText(TextFormat("[%.2f, %.2f]", velocity.x, velocity.y), position.x, position.y + 10, 10, LIME);
+	DrawText(TextFormat("State: %d", this->state), position.x, position.y + 20, 10, LIME);
+	DrawText(TextFormat("Target: [%.2f, %.2f]", this->targetPos.x, this->targetPos.y), position.x, position.y + 30, 10, LIME);
 }
