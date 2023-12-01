@@ -45,7 +45,6 @@ int main(int argc, char const* argv[])
 
     // Init Swarm
     Swarm& DroneSwarm = Swarm::getInstance();
-    DroneSwarm.size() = SWARM_SIZE;
     SwarmMenu SwarmMenuObj(DroneSwarm);
     SimMenu.addModules(SwarmMenuObj);
 
@@ -78,6 +77,9 @@ int main(int argc, char const* argv[])
         
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
             testrrt.update();
+        }
+        if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
+            testrrt.addNode(GlobalData::getInstance().getMouseRel());
         }
 
         // Draw

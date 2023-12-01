@@ -19,7 +19,6 @@
 
 #define CELL_SIZE     50
 
-#define SWARM_SIZE 20
 
 // Return Mouse Rel pos based on grid orgin
 Vector2 calcMouseRel(const Vector2& mousePos, const float& cam_zoom, const Vector2& cam_offset) {
@@ -46,3 +45,4 @@ Rectangle DefineRectangle(const Vector2& rect_pt1, const Vector2& rect_pt2) {
 	};
 	return { rectStart.x, rectStart.y, abs(rectEnd.x), abs(rectEnd.y) };
 }
+

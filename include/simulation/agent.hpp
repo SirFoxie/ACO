@@ -1,5 +1,7 @@
 #pragma once
 
+#include <queue>
+
 #include "raylib.h"
 
 #include "../common/common.hpp"
@@ -24,7 +26,7 @@ public:
 	~Agent() = default;
 
 	Vector2 getPos() { return position; }
-	void addTargetPos(const Vector2& target) { targetPos = target; state = SEEKING; }
+	void addTargetPos(const Vector2& target) { targetQueue.push(target); state = SEEKING; }
 	Vector2 seek(const Vector2& target);
 
 	void update(const std::vector <Agent>& agents, const Weight& agentsWeights);
@@ -36,7 +38,8 @@ private:
 	Vector2 velocity;
 	Vector2 acceleration;
 
-	Vector2 targetPos;
+	std::queue<Vector2> targetQueue;
+	Vector2 currTarget;
 
 	bool Raycast(Vector2 origin, Vector2 direction, float Distance);
 
@@ -66,7 +69,8 @@ void Agent::update(const std::vector <Agent>& agents, const Weight& agentsWeight
 		return;
 		break;
 	case SEEKING:
-		Vector2 seekingForce = seek(targetPos);
+		if (targetQueue.empty()) state = STANDBY;
+		Vector2 seekingForce = seek(targetQueue.front());
 		this->acceleration = Vector2Add(acceleration, Vector2Scale(seekingForce, 10));
 		break;
 	case EXPLORING:
@@ -125,7 +129,7 @@ Vector2 Agent::separation(const std::vector <Agent>& agents) {
 }
 
 Vector2 Agent::seek(const Vector2& target) {
-	if (Vector2Equals(position, target)) state = STANDBY;
+	if (Vector2Equals(position, target)) targetQueue.pop();
 
 	Vector2 steering = { 0.0, 0.0 };
 	Vector2 distance = Vector2Subtract(target, position);
@@ -169,7 +173,7 @@ void Agent::edge() {
 
 void Agent::render() {
 	DrawCircle(position.x, position.y, AGENT_SIZE, ORANGE);
-	debug();
+	//debug();
 	return;
 }
 
@@ -177,5 +181,7 @@ void Agent::debug() {
 	DrawText(TextFormat("[%.2f, %.2f]", position.x, position.y), position.x, position.y, 10, LIME);
 	DrawText(TextFormat("[%.2f, %.2f]", velocity.x, velocity.y), position.x, position.y + 10, 10, LIME);
 	DrawText(TextFormat("State: %d", this->state), position.x, position.y + 20, 10, LIME);
-	DrawText(TextFormat("Target: [%.2f, %.2f]", this->targetPos.x, this->targetPos.y), position.x, position.y + 30, 10, LIME);
+	if (!targetQueue.empty()) {
+		DrawText(TextFormat("Target: [%.2f, %.2f]", this->targetQueue.front().x, this->targetQueue.front().y), position.x, position.y + 30, 10, LIME);
+	}
 }

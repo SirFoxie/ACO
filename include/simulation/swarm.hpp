@@ -3,6 +3,9 @@
 #include "../simulation/world.hpp"
 #include "../simulation/agent.hpp"
 
+
+#define SWARM_SIZE 5
+
 class Swarm {
 public:
 	static Swarm& getInstance() {
@@ -20,10 +23,10 @@ public:
 	void update();
 	void render();
 private:
-	Swarm() {};
+	Swarm(): swarmSize(SWARM_SIZE) { agents.resize(swarmSize); };
 	~Swarm() = default;
 
-	int swarmSize;
+	int swarmSize = 0;
 	std::vector<Agent> agents;
 
 	Agent::AgentState SwarmState = Agent::STANDBY;
