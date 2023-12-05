@@ -1,10 +1,9 @@
 #pragma once
 
-#include "../simulation/world.hpp"
 #include "../simulation/agent.hpp"
+#include "../simulation/rrt.hpp"
 
-
-#define SWARM_SIZE 5
+#define SWARM_SIZE 1
 
 class Swarm {
 public:
@@ -18,12 +17,13 @@ public:
 	int& state() { return reinterpret_cast<int&>(SwarmState); }
 	std::vector<Agent>& getAgents() { return agents; }
 
-	void moveNearest(const Vector2& orgin, const Vector2& target);
+	void moveNearestAgent(const Vector2& target);
 
 	void update();
 	void render();
+	void reset();
 private:
-	Swarm(): swarmSize(SWARM_SIZE) { agents.resize(swarmSize); };
+	Swarm();
 	~Swarm() = default;
 
 	int swarmSize = 0;
@@ -34,18 +34,28 @@ private:
 	void debug();
 };
 
-void Swarm::moveNearest(const Vector2& orgin, const Vector2& target) {
+Swarm::Swarm() : swarmSize(SWARM_SIZE) {
+	agents.resize(swarmSize);
+
+}
+
+void Swarm::reset() {
+	agents.clear();
+	agents.resize(swarmSize);
+}
+
+void Swarm::moveNearestAgent(const Vector2& target) {
 	float min_distance = FLT_MAX;
 	int id = 0, target_id = 0;
 	for (Agent& agent : agents) {
-		float curr_distance = Vector2Distance(orgin, agent.getPos());
+		float curr_distance = Vector2Distance(target, agent.getPos());
 		if (curr_distance < min_distance) {
 			min_distance = curr_distance;
 			target_id = id;
 		}
 		id++;
 	}
-	agents[target_id].addTargetPos(target);
+	//agents[target_id].addTargetPos(target);
 	return;
 }
 
@@ -55,8 +65,11 @@ void Swarm::update() {
 	}
 
 	for (Agent& agent : agents) {
+		if (!World::getInstance().allGoalsFound()) agent.state = Agent::EXPLORING;
+		else agent.state = Agent::STANDBY;
 		agent.update(agents, {0.0, 0.0, 0.0});
 	}
+
 	return;
 }
 
@@ -64,6 +77,7 @@ void Swarm::render() {
 	for (Agent& agent : agents) {
 		agent.render();
 	}
+	//debug();
 	return;
 }
 

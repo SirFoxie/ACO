@@ -12,8 +12,8 @@
 #include "./menu/menu.hpp"
 #include "./menu/swarmmenu.hpp"
 #include "./menu/worldmenu.hpp"
-#include "./simulation/swarm.hpp"
 #include "./simulation/world.hpp"
+#include "./simulation/swarm.hpp"
 #include "./simulation/rrt.hpp"
 
 int main(int argc, char const* argv[])
@@ -53,14 +53,6 @@ int main(int argc, char const* argv[])
         DroneSwarm.render();
         });
 
-    // Init RRT
-    rrt testrrt(6*CELL_SIZE, 0, 20*CELL_SIZE, 20*CELL_SIZE);
-
-
-    RLRenderWindows.push_back([&testrrt]() {
-        testrrt.render();
-        });
-
     // Main loop
     while (!WindowShouldClose())
     {
@@ -70,16 +62,16 @@ int main(int argc, char const* argv[])
         // Inputs
         GUI::HandleInputs(); 
 
-        // Update
-        DroneSwarm.update();
-
         // TEST
+        DroneSwarm.update();
         
         if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            testrrt.update();
+            //testrrt.update();
+            //testrrt.growTree(SimWorld.getRandomFogPoint());
         }
         if (IsMouseButtonReleased(MOUSE_BUTTON_RIGHT)) {
-            testrrt.addNode(GlobalData::getInstance().getMouseRel());
+            SimWorld.reset();
+            DroneSwarm.reset();
         }
 
         // Draw

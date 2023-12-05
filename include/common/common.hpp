@@ -17,7 +17,7 @@
 #define SEARCH_WIDTH   140
 #define SEARCH_HEIGHT  200
 
-#define CELL_SIZE     50
+#define CELL_SIZE     30
 
 
 // Return Mouse Rel pos based on grid orgin
@@ -37,6 +37,7 @@ Vector2 calcCellCoords(const Vector2& position) {
 	if (position.y < 0) result.y--;
 	return result;
 }
+
 Rectangle DefineRectangle(const Vector2& rect_pt1, const Vector2& rect_pt2) {
 	Vector2 rectEnd = Vector2Subtract(rect_pt1, rect_pt2);
 	Vector2 rectStart = {

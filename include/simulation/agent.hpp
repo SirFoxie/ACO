@@ -7,8 +7,12 @@
 #include "../common/common.hpp"
 #include "../simulation/world.hpp"
 
-#define MIN_VEL -5
-#define MAX_VEL 5
+#include "./simulation/rrt.hpp"
+
+#define MIN_VEL -2
+#define MAX_VEL 2
+
+#define MAX_FORCE 0.1
 
 #define AGENT_SIZE 5
 
@@ -26,20 +30,37 @@ public:
 	~Agent() = default;
 
 	Vector2 getPos() { return position; }
-	void addTargetPos(const Vector2& target) { targetQueue.push(target); state = SEEKING; }
+
+	void addTargetPos(Vector2& _targetPos) { 
+		targetPos = _targetPos; 
+		state = SEEKING; 
+	}
+
+	void addTargetNode(const Node& target) { 
+		//targetQueue.push_back(target); 
+		//state = SEEKING; 
+	}
+
 	Vector2 seek(const Vector2& target);
+	
+	Node targetNode;
+	Node currNode;
+	Vector2 targetPos;
 
 	void update(const std::vector <Agent>& agents, const Weight& agentsWeights);
 	void render();
 
 private:
-
 	Vector2 position;
 	Vector2 velocity;
 	Vector2 acceleration;
 
-	std::queue<Vector2> targetQueue;
-	Vector2 currTarget;
+	int viewRadius = 150 + (AGENT_SIZE/2);
+
+	rrt planner;
+	int pathIdx = 0;
+	std::vector<Node> path;
+
 
 	bool Raycast(Vector2 origin, Vector2 direction, float Distance);
 
@@ -47,18 +68,23 @@ private:
 	Vector2 avoid();
 	void edge();
 
+	bool checkObsHit();
+	void checkGoal();
 	void updateMap();
 	void debug();
 };
 
 Agent::Agent() {
-	World::Area StartArea = GridAreaToPixelArea((World::getInstance().getStartArea()));
-	this->position = { (float)GetRandomValue(StartArea.x + (AGENT_SIZE * 2) , StartArea.width -(AGENT_SIZE * 2)),
-						(float)GetRandomValue(StartArea.y + (AGENT_SIZE * 2), StartArea.height -(AGENT_SIZE * 2)) };
+	Area StartArea = World::getInstance().getStartArea();
+	this->position = getRandomPixelPos(StartArea.x+2, StartArea.y+2, StartArea.width-2, StartArea.height-2);
 	this->velocity = { (float)GetRandomValue(MIN_VEL, MAX_VEL), 
 						(float)GetRandomValue(MIN_VEL, MAX_VEL) };
 	this->acceleration = { 1.0, 1.0 };
 	this->state = STANDBY;
+	this->currNode = { position, 0 };
+	this->targetNode = currNode;
+	planner.addNode(position, 0);
+	planner.update();
 	return;
 }
 
@@ -69,29 +95,60 @@ void Agent::update(const std::vector <Agent>& agents, const Weight& agentsWeight
 		return;
 		break;
 	case SEEKING:
-		if (targetQueue.empty()) state = STANDBY;
-		Vector2 seekingForce = seek(targetQueue.front());
-		this->acceleration = Vector2Add(acceleration, Vector2Scale(seekingForce, 10));
+
 		break;
 	case EXPLORING:
 
+		if (path.empty() || pathIdx >= path.size()) {
+			planner.update();
+			targetNode = planner.getTargetNode();
+			path = planner.getPath(currNode, targetNode);
+			pathIdx = 0;
+		}
+
+		else if(Vector2Distance(position, currNode.pos) < 1){
+			currNode = path[pathIdx++];
+		}
+
+		Vector2 exploringForce = seek(currNode.pos);
+		this->acceleration = Vector2Add(acceleration, Vector2Scale(exploringForce, 0.5));
+		
 		break;
 	}
 
 	Vector2 separationForce = separation(agents);
-	this->acceleration = Vector2Add(acceleration, Vector2Scale(separationForce, 10.0));
+	this->acceleration = Vector2Add(acceleration, Vector2Scale(separationForce, 1.0));
 	
-	Vector2 avoidanceForce = avoid(); // avoid static obstacles
-	this->acceleration = Vector2Add(acceleration, Vector2Scale(avoidanceForce, 10.0));
+	// avoid static obstacles
+	//Vector2 avoidanceForce = avoid(); 
+	//this->acceleration = Vector2Add(acceleration, Vector2Scale(avoidanceForce, 0.0));
 
-	this->acceleration = Vector2Scale(acceleration, 0.4);
+	this->acceleration = Vector2Scale(acceleration, 4.0);
 	this->velocity = Vector2Add(velocity, acceleration);
 	this->velocity = Vector2ClampValue(velocity, MIN_VEL, MAX_VEL);
 	this->position = Vector2Add(position, velocity);
 	this->acceleration = Vector2Scale(acceleration, 0);
 
 	edge();
+	//if ( checkObsHit()) planner.removeNode(currNode);
 	updateMap();
+	return;
+}
+
+bool Agent::checkObsHit() {
+	for (auto& obs : World::getInstance().getObs()) {
+		if (CheckCollisionCircles(position, AGENT_SIZE, obs.pos, obs.size)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void Agent::checkGoal() {
+	for (auto& goal : World::getInstance().getGoals()) {
+		if (goal.found == false)
+			goal.found = (CheckCollisionCircles(position, AGENT_SIZE, goal.pos, 20));
+	}
 	return;
 }
 
@@ -101,6 +158,8 @@ void Agent::updateMap() {
 	if (map.checkTileType(cell_pos.x, cell_pos.y) == World::Fog) {
 		map.setTileType(cell_pos.x, cell_pos.y, World::Explored);
 	}
+
+	checkGoal();
 }
 
 Vector2 Agent::separation(const std::vector <Agent>& agents) {
@@ -123,29 +182,27 @@ Vector2 Agent::separation(const std::vector <Agent>& agents) {
 		steering = Vector2Scale(steering, 1.0 / (float)totalSurroundingAgents);
 		steering = Vector2Scale(steering, MAX_VEL);
 		steering = Vector2Subtract(steering, this->velocity);
-		steering = Vector2ClampValue(steering, -0.2, 0.2);
+		steering = Vector2ClampValue(steering, -MAX_FORCE, MAX_FORCE);
 	}
 	return steering;
 }
 
 Vector2 Agent::seek(const Vector2& target) {
-	if (Vector2Equals(position, target)) targetQueue.pop();
 
 	Vector2 steering = { 0.0, 0.0 };
-	Vector2 distance = Vector2Subtract(target, position);
+	Vector2 desired = Vector2Subtract(target, position);
 
+	desired = Vector2Normalize(desired);
+	desired = Vector2Scale(desired, MAX_VEL);
 
-	steering = Vector2Scale(steering, MAX_VEL);
-	steering = Vector2Subtract(distance, velocity);
-	steering = Vector2ClampValue(steering, -0.1, 0.1);
-
+	steering = Vector2Subtract(desired, velocity);
+	steering = Vector2ClampValue(steering, -MAX_FORCE, MAX_FORCE);
 	return steering;
 }
 
-//bool Raycast();
 
 Vector2 Agent::avoid() {
-	World::Area borders = GridAreaToPixelArea(World::getInstance().getMap());
+	Area borders = GridAreaToPixelArea(World::getInstance().getMap());
 
 	Vector2 steering = { 0.0, 0.0 };
 	float perception = 10 * AGENT_SIZE;
@@ -158,7 +215,7 @@ Vector2 Agent::avoid() {
 }
 
 void Agent::edge() {
-	World::Area borders = GridAreaToPixelArea(World::getInstance().getMap());
+	Area borders = GridAreaToPixelArea(World::getInstance().getMap());
 
 	float perception = 1 * AGENT_SIZE;
 
@@ -172,16 +229,22 @@ void Agent::edge() {
 }
 
 void Agent::render() {
+
+	planner.render();
 	DrawCircle(position.x, position.y, AGENT_SIZE, ORANGE);
-	//debug();
+	debug();
 	return;
 }
 
 void Agent::debug() {
+	DrawCircleV(currNode.pos, AGENT_SIZE, PURPLE);
+	DrawCircleV(targetNode.pos, AGENT_SIZE, PURPLE);
+	DrawLineV(currNode.pos, targetNode.pos, PURPLE);
+
+	DrawCircleLines(position.x, position.y, this->viewRadius, PINK);
 	DrawText(TextFormat("[%.2f, %.2f]", position.x, position.y), position.x, position.y, 10, LIME);
 	DrawText(TextFormat("[%.2f, %.2f]", velocity.x, velocity.y), position.x, position.y + 10, 10, LIME);
 	DrawText(TextFormat("State: %d", this->state), position.x, position.y + 20, 10, LIME);
-	if (!targetQueue.empty()) {
-		DrawText(TextFormat("Target: [%.2f, %.2f]", this->targetQueue.front().x, this->targetQueue.front().y), position.x, position.y + 30, 10, LIME);
-	}
+
+
 }

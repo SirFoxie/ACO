@@ -22,7 +22,7 @@ public:
 	void render();
 
 private:
-	bool isPanelHidden = false;
+	bool isPanelHidden = true;
 	int menuW = 600;
 	int menuH = 300;
 	int selectedTab = 0;
